@@ -1505,9 +1505,16 @@ body.hemat-animasi .btn{
     if(mulaiSudah) return; mulaiSudah = true;
     window.__AWAL = awal;
     try{ if(awal.konfig && awal.konfig.namaApp){ document.title = awal.konfig.namaApp; } }catch(e){}
-    var sc = document.createElement('script');
-    sc.text = el('kodeUtama').text;
-    document.body.appendChild(sc);
+    /* Kode utama (di bawah) belum dibaca browser bila pengaturan tersimpan
+       tersedia dan mulai() terpanggil seketika saat halaman masih dimuat —
+       tunggu sampai seluruh halaman selesai dibaca. */
+    function jalankan(){
+      var sc = document.createElement('script');
+      sc.text = el('kodeUtama').text;
+      document.body.appendChild(sc);
+    }
+    if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', jalankan); }
+    else { jalankan(); }
   }
 
   function tampilGalat(err){
