@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#05060f">
+<!-- siapkan sambungan ke server Apps Script & server foto sejak halaman dibuka -->
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://lh3.googleusercontent.com">
+<link rel="preconnect" href="https://drive.google.com">
 <title>Informasi Hasil Akademik - SMAN 1 TOBOALI</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1809,6 +1814,7 @@ body.hemat-animasi .btn{
   var inputNis = el('nis'), inputPass = el('pass');
   var alertLogin = el('peringatan');
   var btnLogin = el('tombolLogin');
+  var pewaktuProgres = null;   // pesan "masih memproses" saat login lambat
 
   inputNis.value = baca(KEY_NISN);
 
@@ -1828,7 +1834,15 @@ body.hemat-animasi .btn{
 
     sibuk(btnLogin,true,[inputNis,inputPass]);
 
+    /* Umpan balik selama menunggu server (bisa beberapa detik saat ramai). */
+    pesan(alertLogin,'Memeriksa NISN dan password...','ok');
+    clearTimeout(pewaktuProgres);
+    pewaktuProgres = setTimeout(function(){
+      pesan(alertLogin,'Masih memproses, mohon tunggu sebentar...','ok');
+    }, 4500);
+
     panggilServer('login', [nisn, pw], function(hasil){
+        clearTimeout(pewaktuProgres);
         var sukses = !!(hasil && typeof hasil === 'object' && hasil.status === 'SUCCESS');
         // bila berhasil, tombol tetap berputar sampai halaman hasil siap (lihat tungguFotoSiap)
         if(!sukses){ sibuk(btnLogin,false,[inputNis,inputPass]); }
@@ -1860,6 +1874,7 @@ body.hemat-animasi .btn{
         });
       },
       function(err){
+        clearTimeout(pewaktuProgres);
         sibuk(btnLogin,false,[inputNis,inputPass]);
         pesan(alertLogin,'GAGAL TERHUBUNG KE SERVER.<br>Server sedang sangat sibuk atau koneksi terputus.<br>Tunggu sebentar lalu coba lagi.' + rincianGalat(err));
         getar(kartuLogin);
@@ -1987,7 +2002,7 @@ body.hemat-animasi .btn{
     var onloadAsli = img.onload, onerrorAsli = img.onerror;
     img.onload  = function(){ if(onloadAsli)  onloadAsli.call(img);  selesai(); };
     img.onerror = function(){ if(onerrorAsli) onerrorAsli.call(img); selesai(); };
-    setTimeout(selesai, batasMs || 2000);   // jaring pengaman: jangan menahan murid terlalu lama
+    setTimeout(selesai, batasMs || 800);    // jaring pengaman: jangan menahan murid terlalu lama
   }
 
   function tampilkanFoto(url){
