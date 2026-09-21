@@ -1481,7 +1481,9 @@ body.hemat-animasi .btn{
   var API_URL = 'https://script.google.com/macros/s/AKfycbzcwoteOq1uu1d8Ylj4tMkUpmGjWFbcwvx6OYJjoqP8bWbYyYSrditdcxmVVJUlVDVO/exec';
 
   var KUNCI_AWAL = 'simfoni_awal_v1';
-  var BATAS_MS = 45000;
+  var BATAS_MS = 25000;          // batas satu panggilan
+  var MAKS_TUNGGU_MS = 3000;     // kunjungan pertama: paling lama menunggu server sebelum halaman tampil
+  var KONFIG_BAKU = {"namaApp":"SIMFONI AKADEMIK","namaSekolah":"SMA NEGERI 1 TOBOALI","logoUrl":"https://lh3.googleusercontent.com/d/1nm-7TM6NYkOCWr3ioHPCYoxlWCze23OY=w240","motivasi":"Fokus dan tetap semangat belajar","motto":"C E M E R L A N G","logoCadangan":"https://lh3.googleusercontent.com/d/1RKdw3Hc2wUyK3cRaEIS0ChZAUhHv0m6A=w240"};   // pengaturan yang ditanam saat build (cadangan)
 
   function el(id){ return document.getElementById(id); }
 
@@ -1543,7 +1545,29 @@ body.hemat-animasi .btn{
     try{ var t = localStorage.getItem(KUNCI_AWAL); return t ? JSON.parse(t) : null; }catch(e){ return null; }
   }
   function tulisCache(awal){
-    try{ localStorage.setItem(KUNCI_AWAL, JSON.stringify({ konfig: awal.konfig, dibuka: !!(awal.status && awal.status.dibuka) })); }catch(e){}
+    try{
+      var st = awal.status || {};
+      localStorage.setItem(KUNCI_AWAL, JSON.stringify({
+        konfig: awal.konfig,
+        dibuka: !!st.dibuka,
+        // saat belum dibuka: kapan tepatnya (menurut jam HP), supaya hitung mundur bisa
+        // langsung tampil pada kunjungan berikutnya tanpa menunggu server
+        target: (!st.dibuka && st.sisaMs > 0) ? (Date.now() + st.sisaMs) : null,
+        waktuTeks: st.waktuTeks || ''
+      }));
+    }catch(e){}
+  }
+
+  /* Status pembukaan dari simpanan, tanpa bertanya ke server. null = tidak bisa disimpulkan. */
+  function statusDariCache(c){
+    if(!c || !c.konfig) return null;
+    if(c.dibuka) return { dibuka: true, sisaMs: 0, waktuTeks: '' };
+    if(typeof c.target === 'number'){
+      var sisa = c.target - Date.now();
+      if(sisa <= 0) return { dibuka: true, sisaMs: 0, waktuTeks: '' };
+      return { dibuka: false, sisaMs: sisa, waktuTeks: c.waktuTeks || '' };
+    }
+    return null;
   }
 
   /* ---------- memulai aplikasi ---------- */
@@ -1587,39 +1611,96 @@ body.hemat-animasi .btn{
     p.appendChild(a);
   }
 
-  function ambilAwal(percobaan, sukses, gagal){
-    kirim('awal', [], sukses, function(err){
-      if(percobaan >= 3){ gagal(err); return; }
-      setTimeout(function(){ ambilAwal(percobaan + 1, sukses, gagal); }, 800 * (percobaan + 1) + Math.random() * 1200);
-    });
+  /* Mengambil pengaturan + status dari server. Server Apps Script kadang lambat
+     (beberapa detik sampai puluhan detik), jadi bila jawaban belum tiba setelah
+     6 detik dikirim satu permintaan cadangan; yang tiba lebih dulu dipakai.
+     Gagal cepat dicoba lagi. Paling banyak 3 permintaan. */
+  function ambilAwal(sukses, gagal){
+    var selesai = false, diluncurkan = 0, berjalan = 0, pewaktu = null;
+    function luncurkan(){
+      if(selesai || diluncurkan >= 3) return;
+      diluncurkan++; berjalan++;
+      kirim('awal', [], function(data){
+        berjalan--;
+        if(selesai) return;
+        selesai = true; clearTimeout(pewaktu);
+        sukses(data);
+      }, function(err){
+        berjalan--;
+        if(selesai) return;
+        clearTimeout(pewaktu);
+        if(diluncurkan < 3){ pewaktu = setTimeout(luncurkan, 600); }
+        else if(berjalan === 0){ selesai = true; gagal(err); }
+      });
+      if(diluncurkan === 1){ clearTimeout(pewaktu); pewaktu = setTimeout(luncurkan, 6000); }
+    }
+    luncurkan();
+  }
+
+  /* Muat ulang halaman satu kali bila kabar server berbeda dari yang dipakai
+     untuk menampilkan halaman (mis. admin baru mengatur ulang jam buka).
+     Tidak dilakukan bila murid sudah mengetik password atau sudah login. */
+  function muatUlangSekali(){
+    var k = el('konten'), m = el('hitungMundur'), p = el('pass');
+    var dilayar = (k && k.className.indexOf('hidden') === -1) || (m && m.className.indexOf('hidden') === -1);
+    if(!dilayar || (p && p.value)) return;
+    try{
+      if(sessionStorage.getItem('simfoni_muat_ulang')) return;
+      sessionStorage.setItem('simfoni_muat_ulang', '1');
+    }catch(e){ return; }
+    location.reload();
+  }
+
+  var statusMulai = null, mulaiPada = 0;
+  function mulaiDengan(status, konfig){
+    statusMulai = status; mulaiPada = Date.now();
+    mulai({ status: status, konfig: konfig });
+  }
+  function bedaDenganYangDipakai(baru){
+    if(!statusMulai || !baru) return false;
+    if(statusMulai.dibuka !== !!baru.dibuka) return true;
+    if(!baru.dibuka){
+      var sisaKini = statusMulai.sisaMs - (Date.now() - mulaiPada);
+      if(Math.abs(sisaKini - baru.sisaMs) > 60000) return true;
+    }
+    return false;
   }
 
   var cache = bacaCache();
-  if(cache && cache.dibuka && cache.konfig){
-    /* Pernah dibuka sebelumnya dan pengumuman sudah dibuka (tidak mungkin
-       "tertutup" lagi): tampil seketika dengan pengaturan tersimpan. Pengaturan
-       terbaru diambil di belakang layar untuk kunjungan berikutnya. */
-    mulai({ status: { dibuka: true, sisaMs: 0, waktuTeks: '' }, konfig: cache.konfig });
-    ambilAwal(0, function(awal){
+  var stCache = statusDariCache(cache);
+  if(stCache){
+    /* Pernah dibuka: tampil seketika dari simpanan (form login, atau hitung mundur
+       bila jam buka belum tiba). Kabar terbaru diambil di belakang layar. */
+    mulaiDengan(stCache, cache.konfig);
+    ambilAwal(function(awal){
       tulisCache(awal);
-      /* Admin bisa saja mengatur ulang WAKTU_BUKA ke waktu yang akan datang
-         setelah kunjungan sebelumnya. Bila kabar terbaru dari server ternyata
-         "belum dibuka" padahal form login sudah tampil, muat ulang sekali
-         supaya hitung mundur yang tampil (pengaturan tersimpan sudah diperbarui). */
-      if(awal.status && !awal.status.dibuka && awal.status.sisaMs > 0){
-        var k = el('konten'), p = el('pass');
-        if(k && k.className.indexOf('hidden') === -1 && (!p || !p.value)){
-          try{
-            if(!sessionStorage.getItem('simfoni_muat_ulang')){
-              sessionStorage.setItem('simfoni_muat_ulang', '1');
-              location.reload();
-            }
-          }catch(e){}
-        }
-      }
+      if(bedaDenganYangDipakai(awal.status)){ muatUlangSekali(); }
     }, function(){});
   }else{
-    ambilAwal(0, function(awal){ tulisCache(awal); mulai(awal); }, tampilGalat);
+    /* Kunjungan pertama: tunggu server paling lama MAKS_TUNGGU_MS. Bila lebih lambat,
+       halaman tampil lebih dulu dengan pengaturan bawaan; begitu server menjawab dan
+       ternyata pengumuman belum dibuka, halaman dimuat ulang sekali agar menampilkan
+       hitung mundur. (Login tetap diperiksa server, jadi tidak bisa dilewati.) */
+    var sudahMulai = false, pewaktuTunggu = null;
+    function tampilTanpaServer(){
+      if(sudahMulai) return; sudahMulai = true;
+      mulaiDengan({ dibuka: true, sisaMs: 0, waktuTeks: '' }, KONFIG_BAKU);
+    }
+    pewaktuTunggu = setTimeout(tampilTanpaServer, MAKS_TUNGGU_MS);
+    ambilAwal(function(awal){
+      tulisCache(awal);
+      if(!sudahMulai){
+        sudahMulai = true; clearTimeout(pewaktuTunggu);
+        mulaiDengan(awal.status, awal.konfig);
+      }else if(bedaDenganYangDipakai(awal.status)){
+        muatUlangSekali();
+      }
+    }, function(err){
+      clearTimeout(pewaktuTunggu);
+      if(sudahMulai) return;
+      if(KONFIG_BAKU && KONFIG_BAKU.namaApp){ tampilTanpaServer(); }
+      else { sudahMulai = true; tampilGalat(err); }
+    });
   }
 })();
 </script>
