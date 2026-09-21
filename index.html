@@ -244,6 +244,24 @@ body{
   background:#0a1c3a; border-color:#22d3ee;
   box-shadow:0 0 0 3px rgba(34,211,238,.16),0 0 22px rgba(34,211,238,.32);
 }
+/* Isian yang diisi otomatis oleh browser (Chrome menyorotnya dengan latar putih/biru
+   muda). Latar dipaksa tetap gelap lewat bayangan-dalam berukuran besar dan
+   tulisan tetap terang. Aturan ini sengaja lebih spesifik daripada :focus di
+   atas — kalau tidak, bayangan :focus menggantikan bayangan-dalam ini dan
+   latar putih bawaan browser muncul saat kolomnya disentuh. */
+.card .field input:-webkit-autofill,
+.card .field input:-webkit-autofill:hover,
+.card .field input:-webkit-autofill:focus,
+.card .isian input:-webkit-autofill,
+.card .isian input:-webkit-autofill:focus{
+  -webkit-text-fill-color:var(--text);
+  caret-color:var(--text);
+  -webkit-box-shadow:0 0 0 60px #0a1c3a inset, 0 0 0 3px rgba(34,211,238,.16), 0 0 22px rgba(34,211,238,.32);
+  box-shadow:0 0 0 60px #0a1c3a inset, 0 0 0 3px rgba(34,211,238,.16), 0 0 22px rgba(34,211,238,.32);
+  border-color:#22d3ee;
+  -webkit-transition:background-color 99999s ease-in-out 0s;
+  transition:background-color 99999s ease-in-out 0s;
+}
 .card .field label{color:#b6c8e6;}
 .card .field input:focus + label,
 .card .field input:not(:placeholder-shown) + label{background:#08142a;}
@@ -767,17 +785,17 @@ button.field-icon{cursor:pointer;}
    Tiap Bagian punya warna sendiri, dipakai untuk judul, ikon, garis tepi,
    DAN isinya (teks data, label, kepala tabel, tombol unduh):
      A. IDENTITAS DIRI     -> hijau zamrud
-     B. DOKUMEN AKADEMIK   -> cyan
-     C. DAFTAR NILAI       -> ungu-merah muda (kolom rangkuman: kuning emas)
+     B. DOKUMEN AKADEMIK   -> ungu-merah muda
+     C. DAFTAR NILAI       -> cyan (kolom rangkuman: kuning emas; sub-bagian: biru-nila)
 
    Warna latar SEL TABEL sengaja pekat (heksadesimal, bukan rgba): kolom
    No & Mata Pelajaran dibekukan, jadi latar tembus akan memperlihatkan
    angka yang sedang digeser di belakangnya. */
 .bag-b{
-  --w-judul:#00eaff;  --w-isi:#d8f7ff;   --w-label:#7fcfe2;
-  --w-a1:#00c8f0;     --w-a2:#356cff;    --w-glow:rgba(0,220,255,.45);
-  --w-garis:rgba(0,220,255,.30);         --w-tint:rgba(0,210,255,.14);
-  --w-baris:#06152e;  --w-baris2:#0a1f3d; --w-kepala:#0a2a4a;
+  --w-judul:#d9a8ff;  --w-isi:#f4eaff;   --w-label:#b99be0;
+  --w-a1:#a855f7;     --w-a2:#e04fd0;    --w-glow:rgba(200,120,255,.45);
+  --w-garis:rgba(200,140,255,.32);       --w-tint:rgba(190,110,255,.14);
+  --w-baris:#130d2c;  --w-baris2:#1b1240; --w-kepala:#2a1558;
 }
 .bag-a{
   --w-judul:#3dffb0;  --w-isi:#d6ffec;   --w-label:#84dcb9;
@@ -786,10 +804,10 @@ button.field-icon{cursor:pointer;}
   --w-baris:#051a15;  --w-baris2:#08261e; --w-kepala:#073c2d;
 }
 .bag-c{
-  --w-judul:#d9a8ff;  --w-isi:#f4eaff;   --w-label:#b99be0;
-  --w-a1:#a855f7;     --w-a2:#e04fd0;    --w-glow:rgba(200,120,255,.45);
-  --w-garis:rgba(200,140,255,.32);       --w-tint:rgba(190,110,255,.14);
-  --w-baris:#130d2c;  --w-baris2:#1b1240; --w-kepala:#2a1558;
+  --w-judul:#00eaff;  --w-isi:#d8f7ff;   --w-label:#7fcfe2;
+  --w-a1:#00c8f0;     --w-a2:#356cff;    --w-glow:rgba(0,220,255,.45);
+  --w-garis:rgba(0,220,255,.30);         --w-tint:rgba(0,210,255,.14);
+  --w-baris:#06152e;  --w-baris2:#0a1f3d; --w-kepala:#0a2a4a;
   --w-rangkum:#ffc857; --w-rangkum-bg:#2c2110; --w-rangkum-kepala:#3d2c0d;
 }
 
@@ -857,9 +875,9 @@ button.field-icon{cursor:pointer;}
 #pengumuman .kartu-bagian thead td{background:var(--w-kepala);color:var(--w-judul);border-bottom-color:var(--w-garis);}
 
 /* B: tombol unduh */
-#pengumuman .bag-b .unduh-btn{color:var(--w-judul);border-color:var(--w-judul);background:rgba(0,220,255,.08);}
+#pengumuman .bag-b .unduh-btn{color:var(--w-judul);border-color:var(--w-judul);background:rgba(200,120,255,.10);}
 #pengumuman .bag-b .unduh-btn:hover,
-#pengumuman .bag-b .unduh-btn:focus{background:var(--w-judul);color:#00121c;}
+#pengumuman .bag-b .unduh-btn:focus{background:var(--w-judul);color:#1a0033;}
 
 /* A: tombol "Perbaiki Data Saya" mengikuti warna Bagiannya */
 #pengumuman .bag-a .tombol-garis{
@@ -876,15 +894,16 @@ button.field-icon{cursor:pointer;}
 #pengumuman .bag-c .sub-panel{border-color:var(--w-garis);}
 #pengumuman .bag-c .sub-judul{background:var(--w-tint);color:var(--w-judul);}
 #pengumuman .bag-c .ikon-sub{background:linear-gradient(135deg,var(--w-a1),var(--w-a2));}
-#pengumuman .bag-c tr.baris-kelompok td{background:#22103f;color:#ff9be6;}
+#pengumuman .bag-c tr.baris-kelompok td{background:#0c2a4e;color:#ffb3ec;}
 #pengumuman .bag-c td.nilai-rr{background:var(--w-rangkum-bg);color:var(--w-rangkum);border-left-color:rgba(255,200,87,.35);}
 #pengumuman .bag-c thead td.nilai-rr{background:var(--w-rangkum-kepala);color:var(--w-rangkum);}
-#pengumuman .bag-c tr.rata-rata td{background:#231548;color:#ffd27a;}
+#pengumuman .bag-c tr.rata-rata td{background:#0b2b50;color:#ffd27a;}
 #pengumuman .bag-c tr.rata-rata td.nilai-rr{background:#3a290f;color:var(--w-rangkum);}
 
-/* SUB-BAGIAN (tiap kegiatan, mis. "Tes Kemampuan Akademik (TKA)"): keluarga ungu yang
-   sama dengan Bagian C tetapi bergeser ke biru-nila, supaya terbaca sebagai
-   tingkat di bawahnya dan tidak sewarna dengan judul Bagian. Variabel warna
+/* SUB-BAGIAN (tiap kegiatan, mis. "Tes Kemampuan Akademik (TKA)"): keluarga biru yang
+   sama dengan Bagian C (cyan) tetapi bergeser ke biru-nila, supaya terbaca sebagai
+   tingkat di bawahnya dan tidak sewarna dengan judul Bagian. Judul kelompok
+   (Mapel Wajib/Pilihan) berwarna merah muda agar menonjol dari nilai-nilainya. Variabel warna
    ditimpa di sini, jadi judul, ikon, garis, hover, dan isi tabel di dalamnya
    ikut berubah. Kolom rangkuman tetap emas. */
 #pengumuman .bag-c .sub-panel{
@@ -893,7 +912,7 @@ button.field-icon{cursor:pointer;}
   --w-garis:rgba(120,150,255,.42);       --w-tint:rgba(100,130,255,.17);
   --w-baris:#0b1130;  --w-baris2:#131b47; --w-kepala:#1a2668;
 }
-#pengumuman .bag-c .sub-panel tr.baris-kelompok td{background:#141d52;color:#9fd2ff;}
+#pengumuman .bag-c .sub-panel tr.baris-kelompok td{background:#161f58;color:#ffb3ec;}
 #pengumuman .bag-c .sub-panel tr.rata-rata td{background:#182058;color:#ffd27a;}
 
 @media all and (max-width:600px){
