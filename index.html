@@ -210,6 +210,48 @@ body{
   .card{border-color:rgba(160,210,255,.20);}
 }
 
+/* ================= TAMPILAN TAJAM (halaman login & panel lain) =================
+   Sebelumnya kartu memakai efek kaca (backdrop-filter blur) di atas foto
+   latar yang sudah diburamkan plus dua "blob" berkabut, sehingga seluruh
+   halaman tampak berkabut. Sekarang kartunya pekat berwarna biru tua dengan
+   garis neon cyan — sama dengan kartu di halaman hasil — dan latarnya hanya
+   foto redup di atas gradasi biru tua, tanpa blur. Warna tulisan dan isian
+   dibuat lebih terang/kontras. Tanpa backdrop-filter & blob berblur, halaman
+   juga lebih ringan di HP. */
+.card{
+  background:linear-gradient(145deg,#0a1a36,#050d1f);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+  border:1px solid rgba(0,221,255,.55);
+  box-shadow:0 0 22px rgba(0,220,255,.16), 0 22px 54px rgba(0,0,0,.65), inset 0 0 26px rgba(0,220,255,.05);
+}
+.bg-foto{
+  -webkit-filter:none; filter:none;
+  opacity:.34;
+}
+.bg-tint{
+  background:
+    radial-gradient(circle at 20% 10%,rgba(0,220,255,.14),transparent 34%),
+    radial-gradient(circle at 80% 20%,rgba(90,60,255,.16),transparent 34%),
+    linear-gradient(180deg,rgba(5,9,22,.55),rgba(5,9,22,.80));
+}
+.blob{display:none;}
+.card .field input,
+.card .isian input,.card .isian select,.card .isian textarea{
+  background:#08142a;
+  border:1px solid rgba(0,221,255,.42);
+}
+.card .field input:focus{
+  background:#0a1c3a; border-color:#22d3ee;
+  box-shadow:0 0 0 3px rgba(34,211,238,.16),0 0 22px rgba(34,211,238,.32);
+}
+.card .field label{color:#b6c8e6;}
+.card .field input:focus + label,
+.card .field input:not(:placeholder-shown) + label{background:#08142a;}
+.card .subtitle,.card .check,.card .foot-note,.card .hint{color:#b6c8e6;}
+.card .sekolah{color:#ffc25a;text-shadow:0 0 12px rgba(255,180,61,.5);}
+.card .logo-img{-webkit-filter:drop-shadow(0 0 10px rgba(34,211,238,.6));filter:drop-shadow(0 0 10px rgba(34,211,238,.6));}
+.card .btn{box-shadow:0 6px 22px rgba(34,211,238,.45);}
+
 /* ===================== KEPALA ===================== */
 
 .card-head{text-align:center;margin-bottom:24px;}
@@ -1558,7 +1600,24 @@ body.hemat-animasi .btn{
        "tertutup" lagi): tampil seketika dengan pengaturan tersimpan. Pengaturan
        terbaru diambil di belakang layar untuk kunjungan berikutnya. */
     mulai({ status: { dibuka: true, sisaMs: 0, waktuTeks: '' }, konfig: cache.konfig });
-    ambilAwal(0, tulisCache, function(){});
+    ambilAwal(0, function(awal){
+      tulisCache(awal);
+      /* Admin bisa saja mengatur ulang WAKTU_BUKA ke waktu yang akan datang
+         setelah kunjungan sebelumnya. Bila kabar terbaru dari server ternyata
+         "belum dibuka" padahal form login sudah tampil, muat ulang sekali
+         supaya hitung mundur yang tampil (pengaturan tersimpan sudah diperbarui). */
+      if(awal.status && !awal.status.dibuka && awal.status.sisaMs > 0){
+        var k = el('konten'), p = el('pass');
+        if(k && k.className.indexOf('hidden') === -1 && (!p || !p.value)){
+          try{
+            if(!sessionStorage.getItem('simfoni_muat_ulang')){
+              sessionStorage.setItem('simfoni_muat_ulang', '1');
+              location.reload();
+            }
+          }catch(e){}
+        }
+      }
+    }, function(){});
   }else{
     ambilAwal(0, function(awal){ tulisCache(awal); mulai(awal); }, tampilGalat);
   }
