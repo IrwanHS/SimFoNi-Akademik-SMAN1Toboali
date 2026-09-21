@@ -871,6 +871,20 @@ button.field-icon{cursor:pointer;}
 #pengumuman .bag-c tr.rata-rata td{background:#231548;color:#ffd27a;}
 #pengumuman .bag-c tr.rata-rata td.nilai-rr{background:#3a290f;color:var(--w-rangkum);}
 
+/* SUB-BAGIAN (tiap kegiatan, mis. "Tes Kemampuan Akademik (TKA)"): keluarga ungu yang
+   sama dengan Bagian C tetapi bergeser ke biru-nila, supaya terbaca sebagai
+   tingkat di bawahnya dan tidak sewarna dengan judul Bagian. Variabel warna
+   ditimpa di sini, jadi judul, ikon, garis, hover, dan isi tabel di dalamnya
+   ikut berubah. Kolom rangkuman tetap emas. */
+#pengumuman .bag-c .sub-panel{
+  --w-judul:#b4c2ff;  --w-isi:#e8eeff;   --w-label:#98a8ee;
+  --w-a1:#6f7dff;     --w-a2:#3f9cff;    --w-glow:rgba(110,140,255,.5);
+  --w-garis:rgba(120,150,255,.42);       --w-tint:rgba(100,130,255,.17);
+  --w-baris:#0b1130;  --w-baris2:#131b47; --w-kepala:#1a2668;
+}
+#pengumuman .bag-c .sub-panel tr.baris-kelompok td{background:#141d52;color:#9fd2ff;}
+#pengumuman .bag-c .sub-panel tr.rata-rata td{background:#182058;color:#ffd27a;}
+
 @media all and (max-width:600px){
   .appbar{padding:14px;}
   .hero-bungkus{margin:10px;}
